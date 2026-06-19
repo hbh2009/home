@@ -1,3 +1,7 @@
 name = "hubohui-homepage"
 main = "index.js"
 compatibility_date = "2026-06-19"
+
+[[kv_namespaces]]
+binding = "CONFIG_KV"
+id = "96d80b8c16c841ff804d024914a6da70"
