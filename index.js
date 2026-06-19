@@ -3,7 +3,7 @@
  */
 
 // ========== 核心配置 ==========
-const ADMIN_PASSWORD = "admin123";
+const ADMIN_PASSWORD = "adminhbh2009";
 const DEFAULT_SONG_ID = "452814990";
 // ============================
 
