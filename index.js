@@ -1,5 +1,5 @@
 /**
- * 胡柏珲个人主页 - 最终完整版
+ * 胡柏珲个人主页 - 最终完整版（修复自我介绍翻译）
  */
 
 const DEFAULT_PASSWORD = "admin123";
@@ -25,7 +25,6 @@ async function getSongInfo(songId) {
 }
 
 function getPageHtml(songId, songInfo) {
-  // 安全转义单引号
   const esc = s => (s || '').replace(/'/g, "\\'");
   const name = esc(songInfo ? songInfo.name : '网易云音乐');
   const artist = esc(songInfo ? songInfo.artist : '胡柏珲');
@@ -58,7 +57,7 @@ p{font-size:16px;padding-left:5px;word-wrap:break-word}
 .contact-item{margin:8px 0;padding-left:8px}
 a{color:var(--primary);text-decoration:none;font-weight:500}
 #emailCopy{color:var(--primary);font-weight:500;cursor:pointer}
-#copyTip{font-size:14px;color:#16a34a;margin-left:10px;display:none}
+#copyTip{font-size:14px;color:#16a34a;margin-left::none}
 .ctrl-group{margin-top:20px;padding-top:20px;border-top:1px solid var(--border);display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
 .lang-btn,.theme-btn,.dark-btn,.bg-btn,.xiaohei-toggle-btn,.admin-btn{background:var(--card);border:1px solid var(--primary);color:var(--primary);padding:6px 14px;border-radius:6px;cursor:pointer;font-size:14px;transition:all .2s;font-family:inherit}
 .lang-btn.active,.theme-btn.active,.dark-btn.active,.bg-btn.active,.xiaohei-toggle-btn.active{background:var(--primary);color:#fff}
@@ -109,8 +108,8 @@ a{color:var(--primary);text-decoration:none;font-weight:500}
 <body>
 <div class="info-container">
 <h1 id="pageHeader">胡柏珲的个人主页</h1>
-<p>你好，我是胡柏珲</p>
-<p>09年河南人，现居住于河南郑州</p>
+<p id="introGreet">你好，我是胡柏珲</p>
+<p id="introLoc">09年河南人，现居住于河南郑州</p>
 <p>目前混的圈比较杂：
 <a href="https://www.dnaxcat.net/" target="_blank" rel="noopener noreferrer">九藏喵窝</a>、<span>罗小黑</span>、
 <a href="https://sr.mihoyo.com/" target="_blank" rel="noopener noreferrer">崩</a>
@@ -121,7 +120,7 @@ a{color:var(--primary);text-decoration:none;font-weight:500}
 <div class="contact-title">联系方式</div>
 <p class="contact-item">QQ：<a href="https://qm.qq.com/q/N35Yopvmwi" target="_blank">3556976065</a></p>
 <p class="contact-item">邮箱：<span id="emailCopy">hubohui@outlook.com</span><span id="copyTip">已复制</span></p>
-<p>在线北京时间：<span id="localTime"></span></p>
+<p><span id="timeLabel">在线北京时间：</span><span id="localTime"></span></p>
 <div class="ctrl-group">
 <button class="lang-btn active" id="zh-CN">简体</button>
 <button class="lang-btn" id="zh-TW">繁體</button>
@@ -229,6 +228,11 @@ var SN='${name}',SA='${artist}',SC='${cover}',CSID='${songId}';
 var LANG={
 "zh-CN":{
   pageTitle:"胡柏珲的个人主页",contactTitle:"联系方式",copyTip:"已复制",
+  // 自我介绍
+  introGreet:"你好，我是胡柏珲",
+  introLoc:"09年河南人，现居住于河南郑州",
+  timeLabel:"在线北京时间：",
+  // 控制按钮
   darkMode:"深色模式",
   themeDefault:"默认蓝",themePink:"可爱粉",themeGreen:"清新绿",themePurple:"梦幻紫",
   bgSpring:"春天",bgSummer:"夏天",bgAutumn:"秋天",bgDefault:"恢复默认",
@@ -259,6 +263,10 @@ var LANG={
 },
 "zh-TW":{
   pageTitle:"胡柏珲的個人主頁",contactTitle:"聯絡方式",copyTip:"已複製",
+  // 自我介紹
+  introGreet:"你好，我是胡柏珲",
+  introLoc:"09年河南人，現居於河南鄭州",
+  timeLabel:"在線北京時間：",
   darkMode:"深色模式",
   themeDefault:"默認藍",themePink:"可愛粉",themeGreen:"清新綠",themePurple:"夢幻紫",
   bgSpring:"春天",bgSummer:"夏天",bgAutumn:"秋天",bgDefault:"恢復默認",
@@ -290,7 +298,8 @@ var LANG={
 };
 
 var $=function(id){return document.getElementById(id);};
-var pageHeader=$("pageHeader"),localTime=$("localTime"),emailCopyEl=$("emailCopy"),copyTipEl=$("copyTip");
+var pageHeader=$("pageHeader"),localTime=$("localTime"),timeLabel=$("timeLabel");
+var emailCopyEl=$("emailCopy"),copyTipEl=$("copyTip");
 var toggleDark=$("toggleDark"),bgSwitchGroup=$("bgSwitchGroup"),xiaohei=$("xiaohei"),toggleXiaohei=$("toggleXiaohei");
 var quoteToast=$("quoteToast"),toast=$("toast"),adminModal=$("adminModal"),adminBtn=$("adminBtn");
 var closeModal=$("closeModal"),saveMusicBtn=$("saveMusicBtn"),adminPassword=$("adminPassword"),musicIdInput=$("musicIdInput");
@@ -318,6 +327,11 @@ function applyLang(){
   pageHeader.textContent=p.pageTitle;
   document.querySelector(".contact-title").textContent=p.contactTitle;
   copyTipEl.textContent=p.copyTip;
+  // 自我介绍
+  $("introGreet").textContent=p.introGreet;
+  $("introLoc").textContent=p.introLoc;
+  timeLabel.textContent=p.timeLabel;
+  // 控制按钮
   toggleDark.textContent=p.darkMode;
   themeBtns.forEach(function(b){
     var t=b.getAttribute("data-theme");
