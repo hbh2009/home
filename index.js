@@ -1,15 +1,98 @@
 /**
- * 胡柏珲个人主页 - 最终完整版（修复自我介绍翻译）
+ * 胡柏珲个人主页 - 全功能整合版
+ * 特性：严格路由、短链重定向、IP去重访客计数、管理后台、主题切换、隐藏彩蛋等
  */
 
+// ========== 默认配置 ==========
 const DEFAULT_PASSWORD = "admin123";
 const DEFAULT_SONG_ID = "452814990";
 
+// ========== 短链映射表（可扩展） ==========
+const LINK_MAP = {
+  "qq": "https://qm.qq.com/q/N35Yopvmwi",
+  "github": "https://github.com/VanillaNahida",
+  "bilibili": "https://space.bilibili.com/401742377",
+  "x": "https://x.com/Nahida_vanilla" // 示例
+};
+
+// ========== 工具函数：生成漂亮404页面 ==========
+function get404Page(reason = "页面走丢了") {
+  return `<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>404 - 页面走丢了</title>
+  <style>
+    body {
+      background: linear-gradient(135deg, #1e293b, #0f172a);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      font-family: 'Microsoft YaHei', sans-serif;
+      color: #fff;
+      text-align: center;
+    }
+    .box {
+      background: rgba(255,255,255,0.05);
+      padding: 50px 60px;
+      border-radius: 20px;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    h1 {
+      font-size: 80px;
+      margin: 0;
+      background: linear-gradient(135deg, #f472b6, #8b5cf6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .sub {
+      font-size: 20px;
+      color: #94a3b8;
+      margin: 10px 0 30px;
+    }
+    .reason {
+      font-size: 14px;
+      color: #64748b;
+      margin-bottom: 20px;
+    }
+    a {
+      color: #a78bfa;
+      text-decoration: none;
+      border: 1px solid #a78bfa;
+      padding: 10px 30px;
+      border-radius: 30px;
+      transition: 0.3s;
+    }
+    a:hover {
+      background: #a78bfa;
+      color: #0f172a;
+    }
+  </style>
+</head>
+<body>
+<div class="box">
+  <h1>404</h1>
+  <div class="sub">哎呀，页面掉进次元裂缝了</div>
+  <div class="reason">💔 ${reason}</div>
+  <a href="/">✨ 传送回主页</a>
+</div>
+</body>
+</html>`;
+}
+
+// ========== 获取网易云歌曲信息 ==========
 async function getSongInfo(songId) {
   try {
     const url = `https://music.163.com/api/song/detail/?id=${songId}&ids=[${songId}]`;
     const res = await fetch(url, {
-      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Referer': 'https://music.163.com/' }
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'Referer': 'https://music.163.com/'
+      }
     });
     const data = await res.json();
     if (data.songs && data.songs.length > 0) {
@@ -20,11 +103,12 @@ async function getSongInfo(songId) {
         cover: (s.album && s.album.picUrl) || 'https://p1.music.126.net/2Vv1nXkGumZ5qX6Ch12yvA==/109951163145807804.jpg'
       };
     }
-  } catch(e) {}
+  } catch (e) {}
   return null;
 }
 
-function getPageHtml(songId, songInfo) {
+// ========== 生成完整HTML页面（含访客计数） ==========
+function getPageHtml(songId, songInfo, visitorCount) {
   const esc = s => (s || '').replace(/'/g, "\\'");
   const name = esc(songInfo ? songInfo.name : '网易云音乐');
   const artist = esc(songInfo ? songInfo.artist : '胡柏珲');
@@ -103,6 +187,7 @@ a{color:var(--primary);text-decoration:none;font-weight:500}
 #xiaohei.jump{animation:xiaoheiJump .5s ease-in-out}
 @keyframes xiaoheiJump{0%{transform:translate(0,0) scale(1)}50%{transform:translate(0,-20px) scale(1.1)}100%{transform:translate(0,0) scale(1)}}
 @media(max-width:480px){#xiaohei{width:50px;right:15px;bottom:15px}.info-container{padding:25px 20px}h1{font-size:22px}}
+.visitor-count{text-align:center;margin-top:20px;padding-top:15px;border-top:1px solid var(--border);font-size:14px;color:var(--text);opacity:0.7}
 </style>
 </head>
 <body>
@@ -121,6 +206,7 @@ a{color:var(--primary);text-decoration:none;font-weight:500}
 <p class="contact-item">QQ：<a href="https://qm.qq.com/q/N35Yopvmwi" target="_blank">3556976065</a></p>
 <p class="contact-item">邮箱：<span id="emailCopy">hubohui@outlook.com</span><span id="copyTip">已复制</span></p>
 <p><span id="timeLabel">在线北京时间：</span><span id="localTime"></span></p>
+<div class="visitor-count">✨ 你是第 ${visitorCount} 位来访的旅行者</div>
 <div class="ctrl-group">
 <button class="lang-btn active" id="zh-CN">简体</button>
 <button class="lang-btn" id="zh-TW">繁體</button>
@@ -228,11 +314,9 @@ var SN='${name}',SA='${artist}',SC='${cover}',CSID='${songId}';
 var LANG={
 "zh-CN":{
   pageTitle:"胡柏珲的个人主页",contactTitle:"联系方式",copyTip:"已复制",
-  // 自我介绍
   introGreet:"你好，我是胡柏珲",
   introLoc:"09年河南人，现居住于河南郑州",
   timeLabel:"在线北京时间：",
-  // 控制按钮
   darkMode:"深色模式",
   themeDefault:"默认蓝",themePink:"可爱粉",themeGreen:"清新绿",themePurple:"梦幻紫",
   bgSpring:"春天",bgSummer:"夏天",bgAutumn:"秋天",bgDefault:"恢复默认",
@@ -263,7 +347,6 @@ var LANG={
 },
 "zh-TW":{
   pageTitle:"胡柏珲的個人主頁",contactTitle:"聯絡方式",copyTip:"已複製",
-  // 自我介紹
   introGreet:"你好，我是胡柏珲",
   introLoc:"09年河南人，現居於河南鄭州",
   timeLabel:"在線北京時間：",
@@ -327,11 +410,9 @@ function applyLang(){
   pageHeader.textContent=p.pageTitle;
   document.querySelector(".contact-title").textContent=p.contactTitle;
   copyTipEl.textContent=p.copyTip;
-  // 自我介绍
   $("introGreet").textContent=p.introGreet;
   $("introLoc").textContent=p.introLoc;
   timeLabel.textContent=p.timeLabel;
-  // 控制按钮
   toggleDark.textContent=p.darkMode;
   themeBtns.forEach(function(b){
     var t=b.getAttribute("data-theme");
@@ -432,7 +513,7 @@ saveMusicBtn.onclick=function(){
   if(!r)return msg(LANG[lang].m2);
   var d=r.replace(/[^0-9]/g,"");
   if(!d.length)return msg(LANG[lang].m3);
-  fetch(location.href,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"save_music",password:p,songId:d})})
+  fetch("/",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"save_music",password:p,songId:d})})
   .then(function(r){return r.json();})
   .then(function(d){if(d.success){msg(LANG[lang].m4,"success");setTimeout(function(){location.reload();},1500);}else{msg(d.message,"danger");}})
   .catch(function(e){msg(LANG[lang].m5,"danger");});
@@ -441,7 +522,7 @@ saveMusicBtn.onclick=function(){
 vfyBtn.onclick=function(){
   var p=oldPwdInput.value.trim();
   if(!p)return msg(LANG[lang].m1);
-  fetch(location.href,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"verify_password",password:p})})
+  fetch("/",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"verify_password",password:p})})
   .then(function(r){return r.json();})
   .then(function(d){if(d.verified){msg(LANG[lang].m6,"success");pwd1.style.display="none";pwd2.style.display="block";}else{msg(LANG[lang].m7,"danger");}})
   .catch(function(e){msg(LANG[lang].m8,"danger");});
@@ -455,7 +536,7 @@ setBtn.onclick=function(){
   if(p.length<8)return msg(LANG[lang].m9);
   if(p!==c)return msg(LANG[lang].m10);
   var s=chkStr(p);if(s.sc<2)return msg(LANG[lang].m11);
-  fetch(location.href,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"change_password",oldPassword:oldPwdInput.value.trim(),newPassword:p,hint:h})})
+  fetch("/",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"change_password",oldPassword:oldPwdInput.value.trim(),newPassword:p,hint:h})})
   .then(function(r){return r.json();})
   .then(function(d){if(d.success){genCode=d.recoveryCode||"N/A";rcDisplay.textContent=genCode;pwd2.style.display="none";pwd3.style.display="block";msg(LANG[lang].m12,"success");}else{msg(d.message||LANG[lang].m13,"danger");}})
   .catch(function(e){msg(LANG[lang].m13,"danger");});
@@ -477,15 +558,21 @@ if(bgUnlock)bgSwitchGroup.classList.add("show");setBg(curBg);
 </html>`;
 }
 
+// ========== Cloudflare Worker 入口 ==========
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+    const path = url.pathname;
+
+    // ----- 1. 处理所有 POST 请求（管理后台 API）-----
     if (request.method === "POST") {
       try {
         const body = await request.json();
         const { action } = body;
         let storedPwd = DEFAULT_PASSWORD;
         try { const p = await env.CONFIG_KV.get("admin_password"); if (p) storedPwd = p; } catch(e) {}
+
+        // 验证密码
         if (action === "verify_password") {
           const { password } = body;
           if (password === storedPwd) return Response.json({ verified: true });
@@ -493,19 +580,27 @@ export default {
           if (rc && password === rc) return Response.json({ verified: true, viaRecovery: true });
           return Response.json({ verified: false });
         }
+
+        // 修改密码
         if (action === "change_password") {
           const { oldPassword, newPassword, hint } = body;
           if (oldPassword !== storedPwd) return Response.json({ success: false, message: "旧密码验证失败" });
           if (!newPassword || newPassword.length < 8) return Response.json({ success: false, message: "密码至少8位" });
+          // 生成恢复码
           const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
           let code = "";
-          for (let i = 0; i < 4; i++) { for (let j = 0; j < 4; j++) code += chars[Math.floor(Math.random() * chars.length)]; if (i < 3) code += "-"; }
+          for (let i = 0; i < 4; i++) {
+            for (let j = 0; j < 4; j++) code += chars[Math.floor(Math.random() * chars.length)];
+            if (i < 3) code += "-";
+          }
           await env.CONFIG_KV.put("admin_password", newPassword);
           await env.CONFIG_KV.put("recovery_code", code);
           if (hint) await env.CONFIG_KV.put("password_hint", hint);
           return Response.json({ success: true, message: "密码已更新", recoveryCode: code });
         }
-        if (action === "save_music" || !action) {
+
+        // 保存歌曲 ID
+        if (action === "save_music") {
           const pwd = body.password;
           const sid = body.songId;
           if (pwd !== storedPwd) return Response.json({ success: false, message: "密码错误" });
@@ -514,26 +609,105 @@ export default {
           await env.CONFIG_KV.put("music_song_id", digits);
           return Response.json({ success: true, message: "保存成功" });
         }
+
         return Response.json({ success: false, message: "未知操作" });
       } catch (e) {
         return Response.json({ success: false, message: "服务器错误" });
       }
     }
-    let songId = DEFAULT_SONG_ID;
-    try { const v = await env.CONFIG_KV.get("music_song_id"); if (v) songId = v; } catch(e) {}
-    let info = null;
-    try {
-      const apiUrl = "https://music.163.com/api/song/detail/?id=" + songId + "&ids=[" + songId + "]";
-      const res = await fetch(apiUrl, { headers: { "User-Agent": "Mozilla/5.0", "Referer": "https://music.163.com/" } });
-      const data = await res.json();
-      if (data.songs && data.songs.length > 0) {
-        const s = data.songs[0];
-        info = { name: s.name || "网易云音乐", artist: (s.artists || []).map(a=>a.name).join(" / ") || "未知歌手", cover: (s.album && s.album.picUrl) || "" };
+
+    // ----- 2. 严格路由：只允许 GET 方法 -----
+    // ----- 2.1 根路径：返回主页 + 访客计数 -----
+    if (path === "/" || path === "") {
+      // --- 访客计数（IP 去重） ---
+      let visitorCount = 1; // 默认值
+      try {
+        // 获取客户端 IP（Cloudflare 提供的头部）
+        const clientIP = request.headers.get("CF-Connecting-IP") || 
+                         request.headers.get("X-Forwarded-For") || 
+                         "unknown";
+        // 从 KV 读取已访问 IP 集合（存储为 JSON 数组）
+        let ipSet = await env.CONFIG_KV.get("visitor_set", "json");
+        if (!Array.isArray(ipSet)) ipSet = [];
+        // 检查当前 IP 是否已经在集合中
+        if (!ipSet.includes(clientIP)) {
+          // 新 IP：加入集合，并增加计数
+          ipSet.push(clientIP);
+          await env.CONFIG_KV.put("visitor_set", JSON.stringify(ipSet));
+          // 读取当前计数并 +1
+          let count = await env.CONFIG_KV.get("visitor_count", "json");
+          if (typeof count !== "number") count = 0;
+          count += 1;
+          await env.CONFIG_KV.put("visitor_count", JSON.stringify(count));
+          visitorCount = count;
+        } else {
+          // 已存在，直接读取计数
+          let count = await env.CONFIG_KV.get("visitor_count", "json");
+          visitorCount = (typeof count === "number") ? count : 1;
+        }
+      } catch (e) {
+        // 如果 KV 出错，忽略并显示默认值
+        visitorCount = 1;
       }
-    } catch(e) {}
-    if (!info) info = { name: "网易云音乐", artist: "胡柏珲", cover: "https://p1.music.126.net/2Vv1nXkGumZ5qX6Ch12yvA==/109951163145807804.jpg" };
-    return new Response(getPageHtml(songId, info), {
-      headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store, no-cache, must-revalidate", "Referrer-Policy": "no-referrer" }
+
+      // --- 获取歌曲信息 ---
+      let songId = DEFAULT_SONG_ID;
+      try { const v = await env.CONFIG_KV.get("music_song_id"); if (v) songId = v; } catch(e) {}
+      let info = null;
+      try {
+        const apiUrl = `https://music.163.com/api/song/detail/?id=${songId}&ids=[${songId}]`;
+        const res = await fetch(apiUrl, {
+          headers: { "User-Agent": "Mozilla/5.0", "Referer": "https://music.163.com/" }
+        });
+        const data = await res.json();
+        if (data.songs && data.songs.length > 0) {
+          const s = data.songs[0];
+          info = {
+            name: s.name || "网易云音乐",
+            artist: (s.artists || []).map(a => a.name).join(" / ") || "未知歌手",
+            cover: (s.album && s.album.picUrl) || ""
+          };
+        }
+      } catch(e) {}
+      if (!info) info = { name: "网易云音乐", artist: "胡柏珲", cover: "https://p1.music.126.net/2Vv1nXkGumZ5qX6Ch12yvA==/109951163145807804.jpg" };
+
+      // 生成 HTML 并返回
+      return new Response(getPageHtml(songId, info, visitorCount), {
+        headers: {
+          "Content-Type": "text/html; charset=utf-8",
+          "Cache-Control": "no-store, no-cache, must-revalidate",
+          "Referrer-Policy": "no-referrer"
+        }
+      });
+    }
+
+    // ----- 2.2 短链重定向：/go/xxx -----
+    if (path.startsWith("/go/")) {
+      const target = path.replace("/go/", "");
+      // 从映射表查找
+      if (LINK_MAP[target]) {
+        return Response.redirect(LINK_MAP[target], 302);
+      } else {
+        // 重定向失败 -> 返回 404
+        return new Response(get404Page(`未找到短链：${target}`), {
+          status: 404,
+          headers: { "Content-Type": "text/html; charset=utf-8" }
+        });
+      }
+    }
+
+    // ----- 2.3 测试 404 页面（可选）-----
+    if (path === "/404") {
+      return new Response(get404Page("您主动访问了测试404页面"), {
+        status: 404,
+        headers: { "Content-Type": "text/html; charset=utf-8" }
+      });
+    }
+
+    // ----- 2.4 其他所有路径：统统 404 -----
+    return new Response(get404Page(`路径 "${path}" 不存在`), {
+      status: 404,
+      headers: { "Content-Type": "text/html; charset=utf-8" }
     });
   }
 };
