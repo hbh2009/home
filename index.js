@@ -7,6 +7,12 @@
 const DEFAULT_PASSWORD = "admin123";
 const DEFAULT_SONG_ID = "452814990";
 
+// 导入游戏页面（放在顶部，与其它 import 一起）
+import { getGameCenterHtml } from './games/gameCenter.js';
+import { getGachaHtml } from './games/gacha.js';
+import { getGuessHtml } from './games/guess.js';
+import { getClickerHtml } from './games/clicker.js';
+
 // ========== 短链映射表（可扩展） ==========
 const LINK_MAP = {
   "qq": "https://qm.qq.com/q/N35Yopvmwi",
@@ -206,6 +212,9 @@ a{color:var(--primary);text-decoration:none;font-weight:500}
 <p class="contact-item">QQ：<a href="https://qm.qq.com/q/N35Yopvmwi" target="_blank">3556976065</a></p>
 <p class="contact-item">邮箱：<span id="emailCopy">hubohui@outlook.com</span><span id="copyTip">已复制</span></p>
 <p><span id="timeLabel">在线北京时间：</span><span id="localTime"></span></p>
+<div style="text-align:center; margin: 18px 0 10px;">
+  <a href="/xyx" style="display:inline-block; background:linear-gradient(135deg,#f472b6,#8b5cf6); color:#fff; padding:10px 30px; border-radius:40px; text-decoration:none; font-weight:bold; box-shadow:0 4px 15px rgba(139,92,246,0.4); transition:0.3s;">🎮 整活小游戏</a>
+</div>
 <div class="visitor-count">✨ 你是第 ${visitorCount} 位来访的旅行者</div>
 <div class="ctrl-group">
 <button class="lang-btn active" id="zh-CN">简体</button>
@@ -704,6 +713,28 @@ export default {
       });
     }
 
+    // ----- 游戏中心：/xyx 及其子页面 -----
+if (path === "/xyx") {
+  return new Response(getGameCenterHtml(), {
+    headers: { "Content-Type": "text/html; charset=utf-8" }
+  });
+}
+if (path === "/xyx/gacha") {
+  return new Response(getGachaHtml(), {
+    headers: { "Content-Type": "text/html; charset=utf-8" }
+  });
+}
+if (path === "/xyx/guess") {
+  return new Response(getGuessHtml(), {
+    headers: { "Content-Type": "text/html; charset=utf-8" }
+  });
+}
+if (path === "/xyx/clicker") {
+  return new Response(getClickerHtml(), {
+    headers: { "Content-Type": "text/html; charset=utf-8" }
+  });
+}
+    
     // ----- 2.4 其他所有路径：统统 404 -----
     return new Response(get404Page(`路径 "${path}" 不存在`), {
       status: 404,
