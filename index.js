@@ -115,7 +115,7 @@ async function getSongInfo(songId) {
 }
 
 // ========== 生成完整HTML页面（含访客计数） ==========
-function getPageHtml(songId, songInfo, visitorCount) {
+function getPageHtml(songId, songInfo, visitorCount, visitorCity, visitorRegion, visitorCountry) {
   const esc = s => (s || '').replace(/'/g, "\\'");
   const name = esc(songInfo ? songInfo.name : '网易云音乐');
   const artist = esc(songInfo ? songInfo.artist : '胡柏珲');
@@ -321,6 +321,10 @@ a{color:var(--primary);text-decoration:none;font-weight:500}
 <div class="quote-toast" id="quoteToast"></div>
 <img id="xiaohei" src="https://i.postimg.cc/SN87V4Pw/处理完成图片20260303052740.gif" alt="罗小黑">
 <script src="https://unpkg.com/aplayer/dist/APlayer.min.js"></script>
+// 属地数据（由服务端传入）
+var VISITOR_CITY = '${visitorCity || ""}';
+var VISITOR_REGION = '${visitorRegion || ""}';
+var VISITOR_COUNTRY = '${visitorCountry || ""}';
 <script>
 (function(){
 "use strict";
@@ -566,9 +570,124 @@ var ap=new APlayer({
   audio:[{name:SN,artist:SA,url:"https://music.163.com/song/media/outer/url?id="+CSID+".mp3",cover:SC}]
 });
 
+// ===== 暗黑模式跟随系统（优先级低于用户手动设置） =====
+// 如果用户从未手动切换过暗黑模式，则跟随系统
+if (sto.get("dark") === null) {
+  const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  if (systemDark) {
+    isDark = true;
+    applyDark();
+  }
+}
+// 监听系统暗黑模式变化（用户手动切换后不再覆盖）
+const darkMedia = window.matchMedia('(prefers-color-scheme: dark)');
+darkMedia.addEventListener('change', function(e) {
+  // 只有用户从未手动切换过时才跟随系统
+  if (sto.get("dark") === null) {
+    isDark = e.matches;
+    applyDark();
+  }
+});
+
+// ===== 访客属地智能问候（弹窗） =====
+function showGreeting() {
+  var greeting = '';
+  var city = VISITOR_CITY;
+  var region = VISITOR_REGION;
+  var country = VISITOR_COUNTRY;
+
+  // 判断是否为中国 IP（根据国家代码）
+  var isChina = (country === 'CN' || country === 'TW' || country === 'HK' || country === 'MO');
+
+  if (isChina && city && city !== 'unknown') {
+    // 国内城市：显示城市 + 省份
+    var regionMap = {
+      'Henan': '河南', 'Zhengzhou': '郑州',
+      'Beijing': '北京', 'Shanghai': '上海',
+      'Guangdong': '广东', 'Guangzhou': '广州',
+      'Shenzhen': '深圳', 'Zhejiang': '浙江',
+      'Hangzhou': '杭州', 'Jiangsu': '江苏',
+      'Nanjing': '南京', 'Sichuan': '四川',
+      'Chengdu': '成都', 'Hubei': '湖北',
+      'Wuhan': '武汉', 'Hunan': '湖南',
+      'Changsha': '长沙', 'Fujian': '福建',
+      'Xiamen': '厦门', 'Shandong': '山东',
+      'Jinan': '济南', 'Qingdao': '青岛',
+      'Tianjin': '天津', 'Chongqing': '重庆',
+      'Liaoning': '辽宁', 'Shenyang': '沈阳',
+      'Dalian': '大连', 'Heilongjiang': '黑龙江',
+      'Harbin': '哈尔滨', 'Jilin': '吉林',
+      'Changchun': '长春', 'Hebei': '河北',
+      'Shijiazhuang': '石家庄', 'Shanxi': '山西',
+      'Taiyuan': '太原', 'Shaanxi': '陕西',
+      'Xi\'an': '西安', 'Gansu': '甘肃',
+      'Lanzhou': '兰州', 'Qinghai': '青海',
+      'Xining': '西宁', 'Tibet': '西藏',
+      'Lhasa': '拉萨', 'Xinjiang': '新疆',
+      'Urumqi': '乌鲁木齐', 'Inner Mongolia': '内蒙古',
+      'Hohhot': '呼和浩特', 'Ningxia': '宁夏',
+      'Yinchuan': '银川', 'Guangxi': '广西',
+      'Nanning': '南宁', 'Yunnan': '云南',
+      'Kunming': '昆明', 'Guizhou': '贵州',
+      'Guiyang': '贵阳', 'Hainan': '海南',
+      'Haikou': '海口', 'Taiwan': '台湾',
+      'Taipei': '台北', 'Hong Kong': '香港',
+      'Macau': '澳门'
+    };
+    var cityDisplay = regionMap[city] || city;
+    var regionDisplay = regionMap[region] || region;
+
+    // 特殊问候语
+    var specialGreetings = {
+      'Henan': '老乡好~ 中不中？',
+      'Zhengzhou': '老乡好~ 中不中？',
+      'Beijing': '帝都的朋友你好！',
+      'Shanghai': '魔都的朋友你好！',
+      'Guangdong': '靓仔/靓女你好！',
+      'Guangzhou': '靓仔/靓女你好！',
+      'Sichuan': '巴适得板！朋友你好~',
+      'Chengdu': '巴适得板！朋友你好~',
+      'Chongqing': '勒是雾都！朋友你好~'
+      'Taiwan':'来自对岸的朋友!你们好'
+    };
+
+    var special = specialGreetings[city] || specialGreetings[region] || '';
+    if (special) {
+      greeting = '来自 ' + cityDisplay + ' 的朋友，' + special;
+    } else {
+      greeting = '来自 ' + cityDisplay + ' 的朋友你好~';
+    }
+  } else if (isChina && !city) {
+    // 中国 IP 但没获取到城市
+    greeting = '来自中国的朋友你好~';
+  } else if (country && country !== 'unknown') {
+    // 海外国家
+    var countryMap = {
+      'US': '美国', 'UK': '英国', 'JP': '日本',
+      'KR': '韩国', 'DE': '德国', 'FR': '法国',
+      'IT': '意大利', 'ES': '西班牙', 'CA': '加拿大',
+      'AU': '澳大利亚', 'RU': '俄罗斯', 'BR': '巴西',
+      'IN': '印度', 'SG': '新加坡', 'MY': '马来西亚',
+      'TH': '泰国', 'VN': '越南', 'PH': '菲律宾',
+      'ID': '印度尼西亚', 'NZ': '新西兰'
+    };
+    var countryDisplay = countryMap[country] || country;
+    greeting = '来自 ' + countryDisplay + ' 的朋友，你好~ 🌍';
+  } else {
+    // 无法获取属地
+    greeting = '来自神秘地方的旅行者，你好~ ✨';
+  }
+
+  // 使用自定义弹窗显示
+  customAlert('🌏 ' + greeting);
+}
+
+// 页面加载完成后显示问候弹窗
+// 使用 setTimeout 确保其他元素已渲染
+setTimeout(showGreeting, 300);
+
 applyLang();setTheme(curTheme);applyDark();initXh();
 if(bgUnlock)bgSwitchGroup.classList.add("show");setBg(curBg);
-})();
 </script>
 </body>
 </html>`;
