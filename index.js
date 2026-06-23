@@ -238,6 +238,12 @@ a{color:var(--primary);text-decoration:none;font-weight:500}
 <button class="admin-btn" id="adminBtn" style="opacity:0.3;font-size:12px">管理</button>
 </div>
 <div class="music-player-wrapper"><div id="aplayer"></div></div>
+<!-- 底部版权信息 -->
+<div style="margin-top: 25px; padding-top: 15px; border-top: 1px solid var(--border); text-align: center; font-size: 14px; color: var(--text); opacity: 0.8;">
+  <p>本网页由 <a href="https://www.cloudflare.com/" target="_blank" style="color: var(--primary); text-decoration: none; font-weight: 500;">Cloudflare</a> 托管</p>
+  <p style="margin-top: 4px;">本网页在 GitHub 上开源 <a href="https://github.com/hbh2009/home" target="_blank" style="color: var(--primary); text-decoration: none; font-weight: 500;">hbh2009/home</a></p>
+  <p style="margin-top: 4px;">本网页由 <a href="https://www.deepseek.com/" target="_blank" style="color: var(--primary); text-decoration: none; font-weight: 500;">DeepSeek</a> 辅助制作</p>
+</div>
 </div>
 
 <div class="modal-mask" id="adminModal">
