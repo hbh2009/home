@@ -325,6 +325,7 @@ a{color:var(--primary);text-decoration:none;font-weight:500}
 <script>
 (function(){
 "use strict";
+try{
 // 属地数据（由服务端传入）
 var VISITOR_CITY = '${visitorCity || ""}';
 var VISITOR_REGION = '${visitorRegion || ""}';
@@ -688,6 +689,9 @@ setTimeout(showGreeting, 300);
 
 applyLang();setTheme(curTheme);applyDark();initXh();
 if(bgUnlock)bgSwitchGroup.classList.add("show");setBg(curBg);
+} catch(e) {
+  alert('页面脚本错误：' + e.message + '\n' + e.stack);
+}
 </script>
 </body>
 </html>`;
