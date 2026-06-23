@@ -12,6 +12,7 @@ import { getGachaHtml } from './game/gacha.js';
 import { getGuessHtml } from './game/guess.js';
 import { getClickerHtml } from './game/clicker.js';
 import { getYsnbHtml } from './ysnb.js';
+import { get404Page } from './404.js';   // 导入独立的404模块
 
 const LINK_MAP = {
   "qq": "https://qm.qq.com/q/N35Yopvmwi",
@@ -29,14 +30,7 @@ function escHtml(str) {
             .replace(/'/g, '&#39;');
 }
 
-function get404Page(reason = "页面走丢了") {
-  const safeReason = escHtml(reason);
-  return `<!DOCTYPE html>
-<html lang="zh">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>404</title>
-<style>body{background:#1e293b;display:flex;justify-content:center;align-items:center;height:100vh;margin:0;font-family:sans-serif;color:#fff;text-align:center}.box{background:rgba(255,255,255,0.05);padding:50px 60px;border-radius:20px}h1{font-size:80px;margin:0;background:linear-gradient(135deg,#f472b6,#8b5cf6);-webkit-background-clip:text;-webkit-text-fill-color:transparent}.sub{color:#94a3b8;margin:10px 0 30px}a{color:#a78bfa;text-decoration:none;border:1px solid #a78bfa;padding:10px 30px;border-radius:30px;transition:0.3s}a:hover{background:#a78bfa;color:#0f172a}</style></head>
-<body><div class="box"><h1>404</h1><div class="sub">哎呀，页面掉进次元裂缝了</div><div class="reason">💔 ${safeReason}</div><a href="/">✨ 传送回主页</a></div></body></html>`;
-}
+// 注意：get404Page 函数已移至 404.js，此处不再定义
 
 async function getSongInfo(songId) {
   try {
