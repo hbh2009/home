@@ -8,10 +8,10 @@ const DEFAULT_PASSWORD = "admin123";
 const DEFAULT_SONG_ID = "452814990";
 
 // 导入游戏页面（放在顶部，与其它 import 一起）
-import { getGameCenterHtml } from './games/gameCenter.js';
-import { getGachaHtml } from './games/gacha.js';
-import { getGuessHtml } from './games/guess.js';
-import { getClickerHtml } from './games/clicker.js';
+import { getGameCenterHtml } from './game/gameCenter.js';
+import { getGachaHtml } from './game/gacha.js';
+import { getGuessHtml } from './game/guess.js';
+import { getClickerHtml } from './game/clicker.js';
 
 // ========== 短链映射表（可扩展） ==========
 const LINK_MAP = {
