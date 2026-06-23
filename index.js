@@ -321,13 +321,14 @@ a{color:var(--primary);text-decoration:none;font-weight:500}
 <div class="quote-toast" id="quoteToast"></div>
 <img id="xiaohei" src="https://i.postimg.cc/SN87V4Pw/处理完成图片20260303052740.gif" alt="罗小黑">
 <script src="https://unpkg.com/aplayer/dist/APlayer.min.js"></script>
+
+<script>
+(function(){
+"use strict";
 // 属地数据（由服务端传入）
 var VISITOR_CITY = '${visitorCity || ""}';
 var VISITOR_REGION = '${visitorRegion || ""}';
 var VISITOR_COUNTRY = '${visitorCountry || ""}';
-<script>
-(function(){
-"use strict";
 
 var SN='${name}',SA='${artist}',SC='${cover}',CSID='${songId}';
 
