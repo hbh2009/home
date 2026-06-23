@@ -12,6 +12,7 @@ import { getGameCenterHtml } from './game/gameCenter.js';
 import { getGachaHtml } from './game/gacha.js';
 import { getGuessHtml } from './game/guess.js';
 import { getClickerHtml } from './game/clicker.js';
+import { getYsnbHtml } from './ysnb.js';
 
 // ========== 短链映射表（可扩展） ==========
 const LINK_MAP = {
@@ -714,6 +715,12 @@ export default {
     }
 
     // ----- 游戏中心：/xyx 及其子页面 -----
+
+if (path === "/ysnb") {
+  return new Response(getYsnbHtml(), {
+    headers: { "Content-Type": "text/html; charset=utf-8" }
+  });
+}
 if (path === "/xyx") {
   return new Response(getGameCenterHtml(), {
     headers: { "Content-Type": "text/html; charset=utf-8" }
