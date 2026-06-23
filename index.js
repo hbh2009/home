@@ -212,10 +212,10 @@ a{color:var(--primary);text-decoration:none;font-weight:500}
 <p class="contact-item">QQ：<a href="https://qm.qq.com/q/N35Yopvmwi" target="_blank">3556976065</a></p>
 <p class="contact-item">邮箱：<span id="emailCopy">hubohui@outlook.com</span><span id="copyTip">已复制</span></p>
 <p><span id="timeLabel">在线北京时间：</span><span id="localTime"></span></p>
-<div style="text-align:center; margin: 18px 0 10px;">
+<div class="visitor-count">✨ 你是第 ${visitorCount} 位来访的旅行者</div>
+<div style="text-align:center; margin:18px 0 10px;">
   <a href="/xyx" style="display:inline-block; background:linear-gradient(135deg,#f472b6,#8b5cf6); color:#fff; padding:10px 30px; border-radius:40px; text-decoration:none; font-weight:bold; box-shadow:0 4px 15px rgba(139,92,246,0.4); transition:0.3s;">🎮 整活小游戏</a>
 </div>
-<div class="visitor-count">✨ 你是第 ${visitorCount} 位来访的旅行者</div>
 <div class="ctrl-group">
 <button class="lang-btn active" id="zh-CN">简体</button>
 <button class="lang-btn" id="zh-TW">繁體</button>
