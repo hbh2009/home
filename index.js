@@ -1,20 +1,20 @@
 /**
- * 胡柏珲个人主页 - 全功能整合版
- * 特性：严格路由、短链重定向、IP去重访客计数、管理后台、主题切换、隐藏彩蛋等
+ * 胡柏珲个人主页 - 全功能安全版
+ * 所有动态数据通过 JSON.parse 注入，避免特殊字符破坏语法
  */
 
 // ========== 默认配置 ==========
 const DEFAULT_PASSWORD = "admin123";
 const DEFAULT_SONG_ID = "452814990";
 
-// 导入游戏页面（放在顶部，与其它 import 一起）
+// 导入游戏页面
 import { getGameCenterHtml } from './game/gameCenter.js';
 import { getGachaHtml } from './game/gacha.js';
 import { getGuessHtml } from './game/guess.js';
 import { getClickerHtml } from './game/clicker.js';
 import { getYsnbHtml } from './ysnb.js';
 
-// ========== 短链映射表（可扩展） ==========
+// ========== 短链映射表 ==========
 const LINK_MAP = {
   "qq": "https://qm.qq.com/q/N35Yopvmwi",
   "github": "https://github.com/VanillaNahida",
@@ -22,85 +22,20 @@ const LINK_MAP = {
   "x": "https://x.com/Nahida_vanilla"
 };
 
-// ========== 工具函数：生成漂亮404页面 ==========
+// ========== 404 页面 ==========
 function get404Page(reason = "页面走丢了") {
   return `<!DOCTYPE html>
 <html lang="zh">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>404 - 页面走丢了</title>
-  <style>
-    body {
-      background: linear-gradient(135deg, #1e293b, #0f172a);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      margin: 0;
-      font-family: 'Microsoft YaHei', sans-serif;
-      color: #fff;
-      text-align: center;
-    }
-    .box {
-      background: rgba(255,255,255,0.05);
-      padding: 50px 60px;
-      border-radius: 20px;
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(255,255,255,0.1);
-    }
-    h1 {
-      font-size: 80px;
-      margin: 0;
-      background: linear-gradient(135deg, #f472b6, #8b5cf6);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-    .sub {
-      font-size: 20px;
-      color: #94a3b8;
-      margin: 10px 0 30px;
-    }
-    .reason {
-      font-size: 14px;
-      color: #64748b;
-      margin-bottom: 20px;
-    }
-    a {
-      color: #a78bfa;
-      text-decoration: none;
-      border: 1px solid #a78bfa;
-      padding: 10px 30px;
-      border-radius: 30px;
-      transition: 0.3s;
-    }
-    a:hover {
-      background: #a78bfa;
-      color: #0f172a;
-    }
-  </style>
-</head>
-<body>
-<div class="box">
-  <h1>404</h1>
-  <div class="sub">哎呀，页面掉进次元裂缝了</div>
-  <div class="reason">💔 ${reason}</div>
-  <a href="/">✨ 传送回主页</a>
-</div>
-</body>
-</html>`;
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>404</title>
+<style>body{background:#1e293b;display:flex;justify-content:center;align-items:center;height:100vh;margin:0;font-family:sans-serif;color:#fff;text-align:center}.box{background:rgba(255,255,255,0.05);padding:50px 60px;border-radius:20px}h1{font-size:80px;margin:0;background:linear-gradient(135deg,#f472b6,#8b5cf6);-webkit-background-clip:text;-webkit-text-fill-color:transparent}.sub{color:#94a3b8;margin:10px 0 30px}a{color:#a78bfa;text-decoration:none;border:1px solid #a78bfa;padding:10px 30px;border-radius:30px;transition:0.3s}a:hover{background:#a78bfa;color:#0f172a}</style></head>
+<body><div class="box"><h1>404</h1><div class="sub">哎呀，页面掉进次元裂缝了</div><div class="reason">💔 ${reason}</div><a href="/">✨ 传送回主页</a></div></body></html>`;
 }
 
 // ========== 获取网易云歌曲信息 ==========
 async function getSongInfo(songId) {
   try {
     const url = `https://music.163.com/api/song/detail/?id=${songId}&ids=[${songId}]`;
-    const res = await fetch(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        'Referer': 'https://music.163.com/'
-      }
-    });
+    const res = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0', 'Referer': 'https://music.163.com/' } });
     const data = await res.json();
     if (data.songs && data.songs.length > 0) {
       const s = data.songs[0];
@@ -114,12 +49,22 @@ async function getSongInfo(songId) {
   return null;
 }
 
-// ========== 生成完整HTML页面（含访客计数） ==========
+// ========== 生成主页 HTML（使用 JSON.parse 安全注入） ==========
 function getPageHtml(songId, songInfo, visitorCount, visitorCity, visitorRegion, visitorCountry) {
-  const esc = s => (s || '').replace(/'/g, "\\'");
-  const name = esc(songInfo ? songInfo.name : '网易云音乐');
-  const artist = esc(songInfo ? songInfo.artist : '胡柏珲');
-  const cover = songInfo ? songInfo.cover : 'https://p1.music.126.net/2Vv1nXkGumZ5qX6Ch12yvA==/109951163145807804.jpg';
+  // 构建一个包含所有动态数据的对象
+  const config = {
+    songId: songId || DEFAULT_SONG_ID,
+    name: songInfo?.name || '网易云音乐',
+    artist: songInfo?.artist || '胡柏珲',
+    cover: songInfo?.cover || 'https://p1.music.126.net/2Vv1nXkGumZ5qX6Ch12yvA==/109951163145807804.jpg',
+    visitorCount: visitorCount || 1,
+    visitorCity: visitorCity || '',
+    visitorRegion: visitorRegion || '',
+    visitorCountry: visitorCountry || ''
+  };
+
+  // 将配置对象转为安全的 JSON 字符串
+  const configJson = JSON.stringify(config);
 
   return `<!DOCTYPE html>
 <html lang="zh-CN">
@@ -148,7 +93,7 @@ p{font-size:16px;padding-left:5px;word-wrap:break-word}
 .contact-item{margin:8px 0;padding-left:8px}
 a{color:var(--primary);text-decoration:none;font-weight:500}
 #emailCopy{color:var(--primary);font-weight:500;cursor:pointer}
-#copyTip{font-size:14px;color:#16a34a;margin-left::none}
+#copyTip{font-size:14px;color:#16a34a;display:none;margin-left:8px}
 .ctrl-group{margin-top:20px;padding-top:20px;border-top:1px solid var(--border);display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
 .lang-btn,.theme-btn,.dark-btn,.bg-btn,.xiaohei-toggle-btn,.admin-btn{background:var(--card);border:1px solid var(--primary);color:var(--primary);padding:6px 14px;border-radius:6px;cursor:pointer;font-size:14px;transition:all .2s;font-family:inherit}
 .lang-btn.active,.theme-btn.active,.dark-btn.active,.bg-btn.active,.xiaohei-toggle-btn.active{background:var(--primary);color:#fff}
@@ -213,7 +158,7 @@ a{color:var(--primary);text-decoration:none;font-weight:500}
 <p class="contact-item">QQ：<a href="https://qm.qq.com/q/N35Yopvmwi" target="_blank">3556976065</a></p>
 <p class="contact-item">邮箱：<span id="emailCopy">hubohui@outlook.com</span><span id="copyTip">已复制</span></p>
 <p><span id="timeLabel">在线北京时间：</span><span id="localTime"></span></p>
-<div class="visitor-count">✨ 你是第 ${visitorCount} 位来访的旅行者</div>
+<div class="visitor-count">✨ 你是第 <span id="visitorCountDisplay">${config.visitorCount}</span> 位来访的旅行者</div>
 <div style="text-align:center; margin:18px 0 10px;">
   <a href="/xyx" style="display:inline-block; background:linear-gradient(135deg,#f472b6,#8b5cf6); color:#fff; padding:10px 30px; border-radius:40px; text-decoration:none; font-weight:bold; box-shadow:0 4px 15px rgba(139,92,246,0.4); transition:0.3s;">🎮 整活小游戏</a>
 </div>
@@ -325,16 +270,18 @@ a{color:var(--primary);text-decoration:none;font-weight:500}
 <script>
 (function(){
 "use strict";
-try {
-// 属地数据（由服务端传入）—— 使用 JSON.stringify 防止特殊字符导致语法错误
-var VISITOR_CITY = ${JSON.stringify(visitorCity || "")};
-var VISITOR_REGION = ${JSON.stringify(visitorRegion || "")};
-var VISITOR_COUNTRY = ${JSON.stringify(visitorCountry || "")};
 
-var SN = ${JSON.stringify(name)};
-var SA = ${JSON.stringify(artist)};
-var SC = ${JSON.stringify(cover)};
-var CSID = ${JSON.stringify(songId)};
+// ===== 安全注入：从后端传入的配置对象 =====
+var CONFIG = ${configJson};
+
+// 解构赋值，方便使用
+var VISITOR_CITY = CONFIG.visitorCity;
+var VISITOR_REGION = CONFIG.visitorRegion;
+var VISITOR_COUNTRY = CONFIG.visitorCountry;
+var SN = CONFIG.name;
+var SA = CONFIG.artist;
+var SC = CONFIG.cover;
+var CSID = CONFIG.songId;
 
 var LANG={
 "zh-CN":{
@@ -498,6 +445,22 @@ var isDark=sto.get("dark")==="true";
 function applyDark(){document.body.classList.toggle("dark",isDark);toggleDark.classList.toggle("active",isDark);sto.set("dark",isDark);}
 toggleDark.onclick=function(){isDark=!isDark;applyDark();};
 
+// ===== 暗黑模式跟随系统（保留） =====
+if (sto.get("dark") === null) {
+  var systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  if (systemDark) {
+    isDark = true;
+    applyDark();
+  }
+}
+var darkMedia = window.matchMedia('(prefers-color-scheme: dark)');
+darkMedia.addEventListener('change', function(e) {
+  if (sto.get("dark") === null) {
+    isDark = e.matches;
+    applyDark();
+  }
+});
+
 document.addEventListener("click",function(e){var p=document.createElement("div");p.className="paw";p.textContent="\\u{1F43E}";p.style.left=(e.clientX-10)+"px";p.style.top=(e.clientY-12)+"px";document.body.appendChild(p);setTimeout(function(){p.remove();},900);});
 
 var bt,isHome=true,xhVis=sto.get("xiaoheiVisible","true")==="true";
@@ -575,37 +538,16 @@ var ap=new APlayer({
   audio:[{name:SN,artist:SA,url:"https://music.163.com/song/media/outer/url?id="+CSID+".mp3",cover:SC}]
 });
 
-// ===== 暗黑模式跟随系统（优先级低于用户手动设置） =====
-// 如果用户从未手动切换过暗黑模式，则跟随系统
-if (sto.get("dark") === null) {
-  const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-  if (systemDark) {
-    isDark = true;
-    applyDark();
-  }
-}
-// 监听系统暗黑模式变化（用户手动切换后不再覆盖）
-const darkMedia = window.matchMedia('(prefers-color-scheme: dark)');
-darkMedia.addEventListener('change', function(e) {
-  // 只有用户从未手动切换过时才跟随系统
-  if (sto.get("dark") === null) {
-    isDark = e.matches;
-    applyDark();
-  }
-});
-
-// ===== 访客属地智能问候（弹窗） =====
+// ===== 访客属地智能问候（保留） =====
 function showGreeting() {
   var greeting = '';
   var city = VISITOR_CITY;
   var region = VISITOR_REGION;
   var country = VISITOR_COUNTRY;
 
-  // 判断是否为中国 IP（根据国家代码）
   var isChina = (country === 'CN' || country === 'TW' || country === 'HK' || country === 'MO');
 
   if (isChina && city && city !== 'unknown') {
-    // 国内城市：显示城市 + 省份
     var regionMap = {
       'Henan': '河南', 'Zhengzhou': '郑州',
       'Beijing': '北京', 'Shanghai': '上海',
@@ -642,7 +584,6 @@ function showGreeting() {
     var cityDisplay = regionMap[city] || city;
     var regionDisplay = regionMap[region] || region;
 
-    // 特殊问候语
     var specialGreetings = {
       'Henan': '老乡好~ 中不中？',
       'Zhengzhou': '老乡好~ 中不中？',
@@ -663,10 +604,8 @@ function showGreeting() {
       greeting = '来自 ' + cityDisplay + ' 的朋友你好~';
     }
   } else if (isChina && !city) {
-    // 中国 IP 但没获取到城市
     greeting = '来自中国的朋友你好~';
   } else if (country && country !== 'unknown') {
-    // 海外国家
     var countryMap = {
       'US': '美国', 'UK': '英国', 'JP': '日本',
       'KR': '韩国', 'DE': '德国', 'FR': '法国',
@@ -679,23 +618,18 @@ function showGreeting() {
     var countryDisplay = countryMap[country] || country;
     greeting = '来自 ' + countryDisplay + ' 的朋友，你好~ 🌍';
   } else {
-    // 无法获取属地
     greeting = '来自神秘地方的旅行者，你好~ ✨';
   }
 
-  // 使用浏览器原生 alert 显示问候
+  // 使用浏览器 alert
   alert('🌏 ' + greeting);
 }
 
-// 页面加载完成后显示问候弹窗
 setTimeout(showGreeting, 300);
 
 applyLang();setTheme(curTheme);applyDark();initXh();
 if(bgUnlock)bgSwitchGroup.classList.add("show");setBg(curBg);
 
-} catch(e) {
-  alert('页面脚本错误：' + e.message + '\n' + e.stack);
-}
 })();
 </script>
 </body>
@@ -716,7 +650,6 @@ export default {
         let storedPwd = DEFAULT_PASSWORD;
         try { const p = await env.CONFIG_KV.get("admin_password"); if (p) storedPwd = p; } catch(e) {}
 
-        // 验证密码
         if (action === "verify_password") {
           const { password } = body;
           if (password === storedPwd) return Response.json({ verified: true });
@@ -725,12 +658,10 @@ export default {
           return Response.json({ verified: false });
         }
 
-        // 修改密码
         if (action === "change_password") {
           const { oldPassword, newPassword, hint } = body;
           if (oldPassword !== storedPwd) return Response.json({ success: false, message: "旧密码验证失败" });
           if (!newPassword || newPassword.length < 8) return Response.json({ success: false, message: "密码至少8位" });
-          // 生成恢复码
           const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
           let code = "";
           for (let i = 0; i < 4; i++) {
@@ -743,7 +674,6 @@ export default {
           return Response.json({ success: true, message: "密码已更新", recoveryCode: code });
         }
 
-        // 保存歌曲 ID
         if (action === "save_music") {
           const pwd = body.password;
           const sid = body.songId;
@@ -761,9 +691,9 @@ export default {
     }
 
     // ----- 2. 严格路由：只允许 GET 方法 -----
-    // ----- 2.1 根路径：返回主页 + 访客计数 -----
+    // ----- 2.1 根路径 -----
     if (path === "/" || path === "") {
-      // --- 访客计数（IP 去重） ---
+      // 访客计数
       let visitorCount = 1;
       try {
         const clientIP = request.headers.get("CF-Connecting-IP") || 
@@ -787,7 +717,7 @@ export default {
         visitorCount = 1;
       }
 
-      // --- 获取歌曲信息 ---
+      // 获取歌曲信息
       let songId = DEFAULT_SONG_ID;
       try { const v = await env.CONFIG_KV.get("music_song_id"); if (v) songId = v; } catch(e) {}
       let info = null;
@@ -821,7 +751,7 @@ export default {
       });
     }
 
-    // ----- 2.2 短链重定向：/go/xxx -----
+    // ----- 2.2 短链重定向 -----
     if (path.startsWith("/go/")) {
       const target = path.replace("/go/", "");
       if (LINK_MAP[target]) {
@@ -834,7 +764,7 @@ export default {
       }
     }
 
-    // ----- 2.3 测试 404 页面 -----
+    // ----- 2.3 测试 404 -----
     if (path === "/404") {
       return new Response(get404Page("您主动访问了测试404页面"), {
         status: 404,
