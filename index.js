@@ -648,7 +648,7 @@ function showGreeting() {
       'Guangzhou': '靓仔/靓女你好！',
       'Sichuan': '巴适得板！朋友你好~',
       'Chengdu': '巴适得板！朋友你好~',
-      'Chongqing': '勒是雾都！朋友你好~'
+      'Chongqing': '勒是雾都！朋友你好~',
       'Taiwan':'来自对岸的朋友!你们好'
     };
 
@@ -808,7 +808,10 @@ export default {
       if (!info) info = { name: "网易云音乐", artist: "胡柏珲", cover: "https://p1.music.126.net/2Vv1nXkGumZ5qX6Ch12yvA==/109951163145807804.jpg" };
 
       // 生成 HTML 并返回
-      return new Response(getPageHtml(songId, info, visitorCount), {
+const visitorCity = request.headers.get("CF-City") || "";
+const visitorRegion = request.headers.get("CF-Region") || "";
+const visitorCountry = request.headers.get("CF-IPCountry") || "";
+return new Response(getPageHtml(songId, info, visitorCount, visitorCity, visitorRegion, visitorCountry), {
         headers: {
           "Content-Type": "text/html; charset=utf-8",
           "Cache-Control": "no-store, no-cache, must-revalidate",
