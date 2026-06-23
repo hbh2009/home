@@ -567,7 +567,7 @@ function showGreeting() {
       'Changchun': '长春', 'Hebei': '河北',
       'Shijiazhuang': '石家庄', 'Shanxi': '山西',
       'Taiyuan': '太原', 'Shaanxi': '陕西',
-      'Xi\'an': '西安', 'Gansu': '甘肃',
+      'Xian': '西安', 'Gansu': '甘肃',
       'Lanzhou': '兰州', 'Qinghai': '青海',
       'Xining': '西宁', 'Tibet': '西藏',
       'Lhasa': '拉萨', 'Xinjiang': '新疆',
