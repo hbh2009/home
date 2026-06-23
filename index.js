@@ -19,7 +19,7 @@ const LINK_MAP = {
   "qq": "https://qm.qq.com/q/N35Yopvmwi",
   "github": "https://github.com/VanillaNahida",
   "bilibili": "https://space.bilibili.com/401742377",
-  "x": "https://x.com/Nahida_vanilla" // 示例
+  "x": "https://x.com/Nahida_vanilla"
 };
 
 // ========== 工具函数：生成漂亮404页面 ==========
@@ -325,13 +325,17 @@ a{color:var(--primary);text-decoration:none;font-weight:500}
 <script>
 (function(){
 "use strict";
-try{
-// 属地数据（由服务端传入）
-var VISITOR_CITY = '${visitorCity || ""}';
-var VISITOR_REGION = '${visitorRegion || ""}';
-var VISITOR_COUNTRY = '${visitorCountry || ""}';
+try {
+// 属地数据（由服务端传入）—— 使用 JSON.stringify 防止特殊字符导致语法错误
+var VISITOR_CITY = ${JSON.stringify(visitorCity || "")};
+var VISITOR_REGION = ${JSON.stringify(visitorRegion || "")};
+var VISITOR_COUNTRY = ${JSON.stringify(visitorCountry || "")};
 
-var SN='${name}',SA='${artist}',SC='${cover}',CSID='${songId}';
+var SN = ${JSON.stringify(name)};
+var SA = ${JSON.stringify(artist)};
+var SC = ${JSON.stringify(cover)};
+var CSID = ${JSON.stringify(songId)};
+
 var LANG={
 "zh-CN":{
   pageTitle:"胡柏珲的个人主页",contactTitle:"联系方式",copyTip:"已复制",
@@ -679,23 +683,25 @@ function showGreeting() {
     greeting = '来自神秘地方的旅行者，你好~ ✨';
   }
 
-  // 使用自定义弹窗显示
+  // 使用浏览器原生 alert 显示问候
   alert('🌏 ' + greeting);
 }
 
 // 页面加载完成后显示问候弹窗
-// 使用 setTimeout 确保其他元素已渲染
 setTimeout(showGreeting, 300);
 
 applyLang();setTheme(curTheme);applyDark();initXh();
 if(bgUnlock)bgSwitchGroup.classList.add("show");setBg(curBg);
+
 } catch(e) {
   alert('页面脚本错误：' + e.message + '\n' + e.stack);
 }
+})();
 </script>
 </body>
 </html>`;
 }
+
 // ========== Cloudflare Worker 入口 ==========
 export default {
   async fetch(request, env) {
@@ -758,33 +764,26 @@ export default {
     // ----- 2.1 根路径：返回主页 + 访客计数 -----
     if (path === "/" || path === "") {
       // --- 访客计数（IP 去重） ---
-      let visitorCount = 1; // 默认值
+      let visitorCount = 1;
       try {
-        // 获取客户端 IP（Cloudflare 提供的头部）
         const clientIP = request.headers.get("CF-Connecting-IP") || 
                          request.headers.get("X-Forwarded-For") || 
                          "unknown";
-        // 从 KV 读取已访问 IP 集合（存储为 JSON 数组）
         let ipSet = await env.CONFIG_KV.get("visitor_set", "json");
         if (!Array.isArray(ipSet)) ipSet = [];
-        // 检查当前 IP 是否已经在集合中
         if (!ipSet.includes(clientIP)) {
-          // 新 IP：加入集合，并增加计数
           ipSet.push(clientIP);
           await env.CONFIG_KV.put("visitor_set", JSON.stringify(ipSet));
-          // 读取当前计数并 +1
           let count = await env.CONFIG_KV.get("visitor_count", "json");
           if (typeof count !== "number") count = 0;
           count += 1;
           await env.CONFIG_KV.put("visitor_count", JSON.stringify(count));
           visitorCount = count;
         } else {
-          // 已存在，直接读取计数
           let count = await env.CONFIG_KV.get("visitor_count", "json");
           visitorCount = (typeof count === "number") ? count : 1;
         }
       } catch (e) {
-        // 如果 KV 出错，忽略并显示默认值
         visitorCount = 1;
       }
 
@@ -809,11 +808,11 @@ export default {
       } catch(e) {}
       if (!info) info = { name: "网易云音乐", artist: "胡柏珲", cover: "https://p1.music.126.net/2Vv1nXkGumZ5qX6Ch12yvA==/109951163145807804.jpg" };
 
-      // 生成 HTML 并返回
-const visitorCity = request.headers.get("CF-City") || "";
-const visitorRegion = request.headers.get("CF-Region") || "";
-const visitorCountry = request.headers.get("CF-IPCountry") || "";
-return new Response(getPageHtml(songId, info, visitorCount, visitorCity, visitorRegion, visitorCountry), {
+      const visitorCity = request.headers.get("CF-City") || "";
+      const visitorRegion = request.headers.get("CF-Region") || "";
+      const visitorCountry = request.headers.get("CF-IPCountry") || "";
+
+      return new Response(getPageHtml(songId, info, visitorCount, visitorCity, visitorRegion, visitorCountry), {
         headers: {
           "Content-Type": "text/html; charset=utf-8",
           "Cache-Control": "no-store, no-cache, must-revalidate",
@@ -825,11 +824,9 @@ return new Response(getPageHtml(songId, info, visitorCount, visitorCity, visitor
     // ----- 2.2 短链重定向：/go/xxx -----
     if (path.startsWith("/go/")) {
       const target = path.replace("/go/", "");
-      // 从映射表查找
       if (LINK_MAP[target]) {
         return Response.redirect(LINK_MAP[target], 302);
       } else {
-        // 重定向失败 -> 返回 404
         return new Response(get404Page(`未找到短链：${target}`), {
           status: 404,
           headers: { "Content-Type": "text/html; charset=utf-8" }
@@ -837,7 +834,7 @@ return new Response(getPageHtml(songId, info, visitorCount, visitorCity, visitor
       }
     }
 
-    // ----- 2.3 测试 404 页面（可选）-----
+    // ----- 2.3 测试 404 页面 -----
     if (path === "/404") {
       return new Response(get404Page("您主动访问了测试404页面"), {
         status: 404,
@@ -845,35 +842,34 @@ return new Response(getPageHtml(songId, info, visitorCount, visitorCity, visitor
       });
     }
 
-    // ----- 游戏中心：/xyx 及其子页面 -----
+    // ----- 游戏中心与彩蛋 -----
+    if (path === "/ysnb") {
+      return new Response(getYsnbHtml(), {
+        headers: { "Content-Type": "text/html; charset=utf-8" }
+      });
+    }
+    if (path === "/xyx") {
+      return new Response(getGameCenterHtml(), {
+        headers: { "Content-Type": "text/html; charset=utf-8" }
+      });
+    }
+    if (path === "/xyx/gacha") {
+      return new Response(getGachaHtml(), {
+        headers: { "Content-Type": "text/html; charset=utf-8" }
+      });
+    }
+    if (path === "/xyx/guess") {
+      return new Response(getGuessHtml(), {
+        headers: { "Content-Type": "text/html; charset=utf-8" }
+      });
+    }
+    if (path === "/xyx/clicker") {
+      return new Response(getClickerHtml(), {
+        headers: { "Content-Type": "text/html; charset=utf-8" }
+      });
+    }
 
-if (path === "/ysnb") {
-  return new Response(getYsnbHtml(), {
-    headers: { "Content-Type": "text/html; charset=utf-8" }
-  });
-}
-if (path === "/xyx") {
-  return new Response(getGameCenterHtml(), {
-    headers: { "Content-Type": "text/html; charset=utf-8" }
-  });
-}
-if (path === "/xyx/gacha") {
-  return new Response(getGachaHtml(), {
-    headers: { "Content-Type": "text/html; charset=utf-8" }
-  });
-}
-if (path === "/xyx/guess") {
-  return new Response(getGuessHtml(), {
-    headers: { "Content-Type": "text/html; charset=utf-8" }
-  });
-}
-if (path === "/xyx/clicker") {
-  return new Response(getClickerHtml(), {
-    headers: { "Content-Type": "text/html; charset=utf-8" }
-  });
-}
-    
-    // ----- 2.4 其他所有路径：统统 404 -----
+    // ----- 其他所有路径 404 -----
     return new Response(get404Page(`路径 "${path}" 不存在`), {
       status: 404,
       headers: { "Content-Type": "text/html; charset=utf-8" }
