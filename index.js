@@ -679,7 +679,7 @@ function showGreeting() {
   }
 
   // 使用自定义弹窗显示
-  customAlert('🌏 ' + greeting);
+  alert('🌏 ' + greeting);
 }
 
 // 页面加载完成后显示问候弹窗
@@ -692,45 +692,6 @@ if(bgUnlock)bgSwitchGroup.classList.add("show");setBg(curBg);
 </body>
 </html>`;
 }
-// ========== 自定义弹窗系统（全局辅助函数） ==========
-function customAlert(msg, cb) {
-  var overlay = document.getElementById('customModalOverlay') || createModalOverlay();
-  var msgEl = document.getElementById('customModalMsg');
-  var btnsEl = document.getElementById('customModalBtns');
-  var inputEl = document.getElementById('customModalInput');
-
-  msgEl.textContent = msg;
-  inputEl.classList.add('hidden');
-  btnsEl.innerHTML = '';
-  var btn = document.createElement('button');
-  btn.textContent = '确定';
-  btn.className = 'modal-btn-primary';
-  btn.onclick = function() {
-    overlay.classList.add('hidden');
-    if (cb) cb();
-  };
-  btnsEl.appendChild(btn);
-  overlay.classList.remove('hidden');
-}
-
-function createModalOverlay() {
-  var overlay = document.createElement('div');
-  overlay.className = 'custom-modal-overlay hidden';
-  overlay.id = 'customModalOverlay';
-  overlay.innerHTML = `
-    <div class="custom-modal-box" id="customModalBox">
-      <p id="customModalMsg"></p>
-      <input type="text" id="customModalInput" class="hidden" />
-      <div class="custom-modal-btns" id="customModalBtns"></div>
-    </div>
-  `;
-  document.body.appendChild(overlay);
-  overlay.addEventListener('click', function(e) {
-    if (e.target === overlay) overlay.classList.add('hidden');
-  });
-  return overlay;
-}
-
 // ========== Cloudflare Worker 入口 ==========
 export default {
   async fetch(request, env) {
