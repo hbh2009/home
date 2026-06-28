@@ -1,6 +1,7 @@
 /**
  * 胡柏珲个人主页 - 最终稳定版
  * 修复：暗黑跟随、IP数组无限、恢复码逻辑、XSS、问候仅首次、自定义弹窗
+ * 修复：小黑阻挡点击（pointer-events: none + 移除点击事件）
  */
 
 // ========== 默认配置 ==========
@@ -131,7 +132,16 @@ a{color:var(--primary);text-decoration:none;font-weight:500}
 @keyframes pawFall{0%{transform:translateY(0) rotate(0deg);opacity:1}100%{transform:translateY(100vh) rotate(360deg);opacity:0}}
 .quote-toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(100px);background:var(--card);border:1px solid var(--primary);padding:12px 24px;border-radius:8px;z-index:99999;opacity:0;transition:all .4s;max-width:80%;text-align:center}
 .quote-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-#xiaohei{position:fixed;width:65px;height:auto;z-index:999;right:20px;bottom:20px;transition:transform .1s}
+#xiaohei {
+  position: fixed;
+  width: 65px;
+  height: auto;
+  z-index: 999;
+  right: 20px;
+  bottom: 20px;
+  transition: transform .1s;
+  pointer-events: none;  /* 让鼠标事件穿透，不阻挡点击 */
+}
 #xiaohei.hidden{opacity:0;pointer-events:none}
 #xiaohei.jump{animation:xiaoheiJump .5s ease-in-out}
 @keyframes xiaoheiJump{0%{transform:translate(0,0) scale(1)}50%{transform:translate(0,-20px) scale(1.1)}100%{transform:translate(0,0) scale(1)}}
@@ -537,7 +547,7 @@ function initXh(){xiaohei.classList.toggle("hidden",!xhVis);toggleXiaohei.textCo
 toggleXiaohei.onclick=function(){xhVis=!xhVis;xiaohei.classList.toggle("hidden",!xhVis);toggleXiaohei.textContent=xhVis?LANG[lang].hideXiaohei:LANG[lang].showXiaohei;sto.set("xiaoheiVisible",xhVis);};
 function goHome(){xiaohei.style.transform="translate(0,0)";isHome=true;}
 document.addEventListener("mousemove",function(e){if(!xhVis)return;isHome=false;clearTimeout(bt);var w=xiaohei.offsetWidth,h=xiaohei.offsetHeight;xiaohei.style.transform="translate("+(e.clientX-window.innerWidth+w/2+20)+"px,"+(e.clientY-window.innerHeight+h/2+20)+"px)";bt=setTimeout(goHome,2000);});
-xiaohei.onclick=function(){if(isHome&&xhVis){xiaohei.classList.remove("jump");void xiaohei.offsetWidth;xiaohei.classList.add("jump");setTimeout(function(){xiaohei.classList.remove("jump");},500);}};
+// 已移除 xiaohei.onclick 事件，不再响应点击
 
 var tc=0,tt,bgUnlock=sto.get("bgUnlocked")==="true";
 pageHeader.onclick=function(){if(bgUnlock)return;tc++;clearTimeout(tt);tt=setTimeout(function(){tc=0;},3000);if(tc===5){tc=0;bgUnlock=true;sto.set("bgUnlocked",true);bgSwitchGroup.classList.add("show");msg(LANG[lang].m15);}};
